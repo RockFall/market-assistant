@@ -1,0 +1,370 @@
+main.dart:
+```
+import 'package:flutter/material.dart';
+
+import 'src/app.dart';
+import 'src/settings/settings_controller.dart';
+import 'src/settings/settings_service.dart';
+
+void main() async {
+  // Set up the SettingsController, which will glue user settings to multiple
+  // Flutter Widgets.
+  final settingsController = SettingsController(SettingsService());
+
+  // Load the user's preferred theme while the splash screen is displayed.
+  // This prevents a sudden theme change when the app is first displayed.
+  await settingsController.loadSettings();
+
+  // Run the app and pass in the SettingsController. The app listens to the
+  // SettingsController for changes, then passes it further down to the
+  // SettingsView.
+  runApp(MyApp(settingsController: settingsController));
+}
+
+```
+
+src\app.dart:
+```
+import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+
+import 'sample_feature/sample_item_details_view.dart';
+import 'sample_feature/sample_item_list_view.dart';
+import 'settings/settings_controller.dart';
+import 'settings/settings_view.dart';
+
+/// The Widget that configures your application.
+class MyApp extends StatelessWidget {
+  const MyApp({
+    super.key,
+    required this.settingsController,
+  });
+
+  final SettingsController settingsController;
+
+  @override
+  Widget build(BuildContext context) {
+    // Glue the SettingsController to the MaterialApp.
+    //
+    // The ListenableBuilder Widget listens to the SettingsController for changes.
+    // Whenever the user updates their settings, the MaterialApp is rebuilt.
+    return ListenableBuilder(
+      listenable: settingsController,
+      builder: (BuildContext context, Widget? child) {
+        return MaterialApp(
+          // Providing a restorationScopeId allows the Navigator built by the
+          // MaterialApp to restore the navigation stack when a user leaves and
+          // returns to the app after it has been killed while running in the
+          // background.
+          restorationScopeId: 'app',
+
+          // Provide the generated AppLocalizations to the MaterialApp. This
+          // allows descendant Widgets to display the correct translations
+          // depending on the user's locale.
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('en', ''), // English, no country code
+          ],
+
+          // Use AppLocalizations to configure the correct application title
+          // depending on the user's locale.
+          //
+          // The appTitle is defined in .arb files found in the localization
+          // directory.
+          onGenerateTitle: (BuildContext context) =>
+              AppLocalizations.of(context)!.appTitle,
+
+          // Define a light and dark color theme. Then, read the user's
+          // preferred ThemeMode (light, dark, or system default) from the
+          // SettingsController to display the correct theme.
+          theme: ThemeData(),
+          darkTheme: ThemeData.dark(),
+          themeMode: settingsController.themeMode,
+
+          // Define a function to handle named routes in order to support
+          // Flutter web url navigation and deep linking.
+          onGenerateRoute: (RouteSettings routeSettings) {
+            return MaterialPageRoute<void>(
+              settings: routeSettings,
+              builder: (BuildContext context) {
+                switch (routeSettings.name) {
+                  case SettingsView.routeName:
+                    return SettingsView(controller: settingsController);
+                  case SampleItemDetailsView.routeName:
+                    return const SampleItemDetailsView();
+                  case SampleItemListView.routeName:
+                  default:
+                    return const SampleItemListView();
+                }
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+```
+
+src\localization\app_en.arb:
+```
+{
+  "appTitle": "shoppingplanner",
+  "@appTitle": {
+    "description": "The title of the application"
+  }
+}
+
+```
+
+src\sample_feature\sample_item.dart:
+```
+/// A placeholder class that represents an entity or model.
+class SampleItem {
+  const SampleItem(this.id);
+
+  final int id;
+}
+
+```
+
+src\sample_feature\sample_item_details_view.dart:
+```
+import 'package:flutter/material.dart';
+
+/// Displays detailed information about a SampleItem.
+class SampleItemDetailsView extends StatelessWidget {
+  const SampleItemDetailsView({super.key});
+
+  static const routeName = '/sample_item';
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Item Details'),
+      ),
+      body: const Center(
+        child: Text('More Information Here'),
+      ),
+    );
+  }
+}
+
+```
+
+src\sample_feature\sample_item_list_view.dart:
+```
+import 'package:flutter/material.dart';
+
+import '../settings/settings_view.dart';
+import 'sample_item.dart';
+import 'sample_item_details_view.dart';
+
+/// Displays a list of SampleItems.
+class SampleItemListView extends StatelessWidget {
+  const SampleItemListView({
+    super.key,
+    this.items = const [SampleItem(1), SampleItem(2), SampleItem(3)],
+  });
+
+  static const routeName = '/';
+
+  final List<SampleItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Sample Items'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              // Navigate to the settings page. If the user leaves and returns
+              // to the app after it has been killed while running in the
+              // background, the navigation stack is restored.
+              Navigator.restorablePushNamed(context, SettingsView.routeName);
+            },
+          ),
+        ],
+      ),
+
+      // To work with lists that may contain a large number of items, it’s best
+      // to use the ListView.builder constructor.
+      //
+      // In contrast to the default ListView constructor, which requires
+      // building all Widgets up front, the ListView.builder constructor lazily
+      // builds Widgets as they’re scrolled into view.
+      body: ListView.builder(
+        // Providing a restorationId allows the ListView to restore the
+        // scroll position when a user leaves and returns to the app after it
+        // has been killed while running in the background.
+        restorationId: 'sampleItemListView',
+        itemCount: items.length,
+        itemBuilder: (BuildContext context, int index) {
+          final item = items[index];
+
+          return ListTile(
+            title: Text('SampleItem ${item.id}'),
+            leading: const CircleAvatar(
+              // Display the Flutter Logo image asset.
+              foregroundImage: AssetImage('assets/images/flutter_logo.png'),
+            ),
+            onTap: () {
+              // Navigate to the details page. If the user leaves and returns to
+              // the app after it has been killed while running in the
+              // background, the navigation stack is restored.
+              Navigator.restorablePushNamed(
+                context,
+                SampleItemDetailsView.routeName,
+              );
+            }
+          );
+        },
+      ),
+    );
+  }
+}
+
+```
+
+src\settings\settings_controller.dart:
+```
+import 'package:flutter/material.dart';
+
+import 'settings_service.dart';
+
+/// A class that many Widgets can interact with to read user settings, update
+/// user settings, or listen to user settings changes.
+///
+/// Controllers glue Data Services to Flutter Widgets. The SettingsController
+/// uses the SettingsService to store and retrieve user settings.
+class SettingsController with ChangeNotifier {
+  SettingsController(this._settingsService);
+
+  // Make SettingsService a private variable so it is not used directly.
+  final SettingsService _settingsService;
+
+  // Make ThemeMode a private variable so it is not updated directly without
+  // also persisting the changes with the SettingsService.
+  late ThemeMode _themeMode;
+
+  // Allow Widgets to read the user's preferred ThemeMode.
+  ThemeMode get themeMode => _themeMode;
+
+  /// Load the user's settings from the SettingsService. It may load from a
+  /// local database or the internet. The controller only knows it can load the
+  /// settings from the service.
+  Future<void> loadSettings() async {
+    _themeMode = await _settingsService.themeMode();
+
+    // Important! Inform listeners a change has occurred.
+    notifyListeners();
+  }
+
+  /// Update and persist the ThemeMode based on the user's selection.
+  Future<void> updateThemeMode(ThemeMode? newThemeMode) async {
+    if (newThemeMode == null) return;
+
+    // Do not perform any work if new and old ThemeMode are identical
+    if (newThemeMode == _themeMode) return;
+
+    // Otherwise, store the new ThemeMode in memory
+    _themeMode = newThemeMode;
+
+    // Important! Inform listeners a change has occurred.
+    notifyListeners();
+
+    // Persist the changes to a local database or the internet using the
+    // SettingService.
+    await _settingsService.updateThemeMode(newThemeMode);
+  }
+}
+
+```
+
+src\settings\settings_service.dart:
+```
+import 'package:flutter/material.dart';
+
+/// A service that stores and retrieves user settings.
+///
+/// By default, this class does not persist user settings. If you'd like to
+/// persist the user settings locally, use the shared_preferences package. If
+/// you'd like to store settings on a web server, use the http package.
+class SettingsService {
+  /// Loads the User's preferred ThemeMode from local or remote storage.
+  Future<ThemeMode> themeMode() async => ThemeMode.system;
+
+  /// Persists the user's preferred ThemeMode to local or remote storage.
+  Future<void> updateThemeMode(ThemeMode theme) async {
+    // Use the shared_preferences package to persist settings locally or the
+    // http package to persist settings over the network.
+  }
+}
+
+```
+
+src\settings\settings_view.dart:
+```
+import 'package:flutter/material.dart';
+
+import 'settings_controller.dart';
+
+/// Displays the various settings that can be customized by the user.
+///
+/// When a user changes a setting, the SettingsController is updated and
+/// Widgets that listen to the SettingsController are rebuilt.
+class SettingsView extends StatelessWidget {
+  const SettingsView({super.key, required this.controller});
+
+  static const routeName = '/settings';
+
+  final SettingsController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Settings'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        // Glue the SettingsController to the theme selection DropdownButton.
+        //
+        // When a user selects a theme from the dropdown list, the
+        // SettingsController is updated, which rebuilds the MaterialApp.
+        child: DropdownButton<ThemeMode>(
+          // Read the selected themeMode from the controller
+          value: controller.themeMode,
+          // Call the updateThemeMode method any time the user selects a theme.
+          onChanged: controller.updateThemeMode,
+          items: const [
+            DropdownMenuItem(
+              value: ThemeMode.system,
+              child: Text('System Theme'),
+            ),
+            DropdownMenuItem(
+              value: ThemeMode.light,
+              child: Text('Light Theme'),
+            ),
+            DropdownMenuItem(
+              value: ThemeMode.dark,
+              child: Text('Dark Theme'),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+```
