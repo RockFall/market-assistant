@@ -15,6 +15,10 @@ class ProductsScreen extends StatelessWidget {
       {'name': 'Cebola Branca', 'image': 'assets/images/cebola_branca.jpg'},
     ];
 
+    // Detecta o tamanho da tela
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
+    final double cardSize = isMobile ? 150 : 200;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Produtos'),
@@ -29,10 +33,10 @@ class ProductsScreen extends StatelessWidget {
       ),
       body: GridView.builder(
         padding: const EdgeInsets.all(10),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2, // Define o número de colunas
-          crossAxisSpacing: 10, // Espaçamento entre colunas
-          mainAxisSpacing: 10, // Espaçamento entre linhas
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: isMobile ? 2 : 5, // Define o número de colunas
+          crossAxisSpacing: isMobile ? 10 : 30, // Espaçamento entre colunas
+          mainAxisSpacing: isMobile ? 10 : 20, // Espaçamento entre linhas
           childAspectRatio: 1, // Proporção do item (largura/altura)
         ),
         itemCount: mockProducts.length,
@@ -46,7 +50,15 @@ class ProductsScreen extends StatelessWidget {
                 // Aqui você pode navegar para a tela de detalhes do produto
                 print('Clicou no produto ${product['name']}');
               },
-              child: Column(
+              child: Container(
+                width: cardSize,
+                height: cardSize,
+                constraints: BoxConstraints(
+                  maxHeight: cardSize,
+                  minHeight: cardSize,
+                ),
+                padding: const EdgeInsets.all(8),
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -54,6 +66,8 @@ class ProductsScreen extends StatelessWidget {
                     child: Image.asset(
                       product['image']!,
                       fit: BoxFit.cover,
+                      width: cardSize,
+                      height: cardSize,
                     ),
                   ),
                   Padding(
@@ -65,6 +79,7 @@ class ProductsScreen extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
               ),
             ),
           );
