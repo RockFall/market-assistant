@@ -1,90 +1,119 @@
 import 'package:flutter/material.dart';
+import '../../services/product_service.dart';
+import '../../services/database_service.dart';
 
-class ProductsScreen extends StatelessWidget {
+class ProductsScreen extends StatefulWidget {
   const ProductsScreen({super.key});
 
   static const routeName = '/products';
 
   @override
-  Widget build(BuildContext context) {
-    // Mock de dados dos produtos
-    final List<Map<String, String>> mockProducts = [
-      {'name': 'Macarrão', 'image': 'assets/images/macarrao_lasanha.jpg'},
-      {'name': 'Tomate', 'image': 'assets/images/tomate.jpg'},
-      {'name': 'Alface', 'image': 'assets/images/alface.jpg'},
-      {'name': 'Cebola Branca', 'image': 'assets/images/cebola_branca.jpg'},
-    ];
+  State<ProductsScreen> createState() => _ProductsScreenState();
+}
 
-    // Detecta o tamanho da tela
-    final bool isMobile = MediaQuery.of(context).size.width < 600;
-    final double cardSize = isMobile ? 150 : 200;
+class _ProductsScreenState extends State<ProductsScreen> {
+  final ProductService productService = ProductService(DatabaseService());
+  List<Map<String, dynamic>> displayedProducts = [];
+  String selectedCategory = 'Todos';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProducts();
+  }
+
+  Future<void> _loadProducts() async {
+    await productService.loadMockProducts();
+    final products = await productService.getAllProducts();
+    setState(() {
+      displayedProducts = products;
+    });
+  }
+
+  Future<void> _filterProducts(String category) async {
+    if (category == 'Todos') {
+      final products = await productService.getAllProducts();
+      setState(() {
+        displayedProducts = products;
+        selectedCategory = category;
+      });
+    } else {
+      final filteredProducts = await productService.filterProductsByCategory(category);
+      setState(() {
+        displayedProducts = filteredProducts;
+        selectedCategory = category;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const categories = ['Todos', 'Massas', 'Legumes', 'Vegetais'];
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Produtos'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () {
-              // Navega para a tela de adicionar produto
+          DropdownButton<String>(
+            value: selectedCategory,
+            onChanged: (value) {
+              if (value != null) {
+                _filterProducts(value);
+              }
             },
+            items: categories.map((String category) {
+              return DropdownMenuItem<String>(
+                value: category,
+                child: Text(category),
+              );
+            }).toList(),
           ),
+          IconButton(
+    key: const Key('addProductButton'), // Adicione uma chave aqui
+    icon: const Icon(Icons.add),
+    onPressed: () {
+      // Navega para a tela de adicionar produto
+      print("Botão adicionar clicado");
+    },
+  ),
         ],
       ),
-      body: GridView.builder(
-        padding: const EdgeInsets.all(10),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: isMobile ? 2 : 5, // Define o número de colunas
-          crossAxisSpacing: isMobile ? 10 : 30, // Espaçamento entre colunas
-          mainAxisSpacing: isMobile ? 10 : 20, // Espaçamento entre linhas
-          childAspectRatio: 1, // Proporção do item (largura/altura)
-        ),
-        itemCount: mockProducts.length,
-        itemBuilder: (BuildContext context, int index) {
-          final product = mockProducts[index];
-
-          return Card(
-            elevation: 5,
-            child: InkWell(
-              onTap: () {
-                // Aqui você pode navegar para a tela de detalhes do produto
-                print('Clicou no produto ${product['name']}');
+      body: displayedProducts.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : GridView.builder(
+              padding: const EdgeInsets.all(10),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                childAspectRatio: 1,
+              ),
+              itemCount: displayedProducts.length,
+              itemBuilder: (BuildContext context, int index) {
+                final product = displayedProducts[index];
+                return Card(
+                  elevation: 5,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Image.asset(
+                          product['image'],
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                          product['name'],
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
               },
-              child: Container(
-                width: cardSize,
-                height: cardSize,
-                constraints: BoxConstraints(
-                  maxHeight: cardSize,
-                  minHeight: cardSize,
-                ),
-                padding: const EdgeInsets.all(8),
-                child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Image.asset(
-                      product['image']!,
-                      fit: BoxFit.cover,
-                      width: cardSize,
-                      height: cardSize,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text(
-                      product['name']!,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ],
-              ),
-              ),
             ),
-          );
-        },
-      ),
     );
   }
 }
