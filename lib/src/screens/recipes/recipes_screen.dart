@@ -15,6 +15,8 @@ class RecipesScreen extends StatelessWidget {
       {'name': 'Sopa de Legumes', 'image': 'assets/images/sopa_legumes.jpeg'},
     ];
 
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Receitas'),
@@ -29,11 +31,11 @@ class RecipesScreen extends StatelessWidget {
       ),
       body: GridView.builder(
         padding: const EdgeInsets.all(10),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2, // Número de colunas
-          crossAxisSpacing: 10, // Espaçamento entre colunas
-          mainAxisSpacing: 10, // Espaçamento entre linhas
-          childAspectRatio: 0.9, // Proporção do item (mais alto para receitas)
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: isMobile ? 2 : 6, // N de colunas
+          crossAxisSpacing: 10, // Espaçamento colunas
+          mainAxisSpacing: 10, // Espaçamento linhas
+          childAspectRatio: 0.9,
         ),
         itemCount: mockRecipes.length,
         itemBuilder: (BuildContext context, int index) {

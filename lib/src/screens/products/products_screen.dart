@@ -50,6 +50,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
   Widget build(BuildContext context) {
     const categories = ['Todos', 'Massas', 'Legumes', 'Vegetais'];
 
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Produtos'),
@@ -82,8 +84,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
           ? const Center(child: CircularProgressIndicator())
           : GridView.builder(
               padding: const EdgeInsets.all(10),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: isMobile ? 2 : 6,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
                 childAspectRatio: 1,
@@ -100,6 +102,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         child: Image.asset(
                           product['image'],
                           fit: BoxFit.cover,
+                          height: 220,
                         ),
                       ),
                       Padding(
