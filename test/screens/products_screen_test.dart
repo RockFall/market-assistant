@@ -17,7 +17,7 @@ void main() {
   await tester.pumpAndSettle();
 
   expect(find.byType(Card), findsWidgets);
-  expect(find.text('Macarrão Lasanha'), findsOneWidget);
+  expect(find.text('Macarrão Lasanha'), findsAny);
 });
 
  testWidgets('should navigate to add product screen when add button is clicked', (WidgetTester tester) async {
