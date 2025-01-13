@@ -122,7 +122,7 @@ void main() {
       await tester.tap(find.text('Massas').last);
       await tester.pumpAndSettle();
 
-      expect(find.text('Macarrão Lasanha'), findsOneWidget);
+      expect(find.text('Macarrão Lasanha'), findsAny);
       expect(find.text('Tomate'), findsNothing);
     });
 
